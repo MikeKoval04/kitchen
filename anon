@@ -1,0 +1,89 @@
+// Global variables
+
+
+const TELEGRAM_TOKEN = '6951919549:AAGuHo2-_GyLU64R1BlgC1i9ghcE6pDNUjI';
+const API_URL = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
+const TARGET_CHAT_ID = '-1001308822946';
+var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzWBzpyzzrl_iNQlHpELhlLcue-rGLjnrDvE0Br-_RM34ZJEGBZAUGTSLNoZpFZ_B7fGQ/exec'
+var THREAD_ID = "2758"
+
+
+function setWebhook() {
+  const url = `${API_URL}/setWebhook`;
+  const payload = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      url: WEB_APP_URL
+    })
+  };
+
+  // Sending the request to Telegram API to set the webhook
+  const response = UrlFetchApp.fetch(url, payload);
+  
+  // Log the response for debugging
+  Logger.log(response.getContentText());
+}
+
+// Sets up the web app - deploy this function as a Web App
+function doPost(e) {
+  // Parse the incoming update from Telegram
+  const data = JSON.parse(e.postData.contents);
+
+  // Check if the message comes from a private chat
+  if (data.message && data.message.chat.type === 'private') {
+    if (data.message.text) {
+      sendMessageToTargetChat(data.message.text);
+    } else if (data.message.photo && data.message.photo.length > 0) {
+      // Photo is sent; process the largest size photo
+      //sendMessageToTargetChat(data.message.photo.pop())
+      const photo = data.message.photo.pop();
+      sendPhotoByFileId(TARGET_CHAT_ID, photo.file_id, data.message.caption);
+    }
+  }
+}
+
+// Function to send text messages to the target chat
+function sendMessageToTargetChat(text) {
+  const url = `${API_URL}/sendMessage`;
+  const payload = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      chat_id: TARGET_CHAT_ID,
+      message_thread_id: THREAD_ID,
+      parse_mode: 'HTML',
+      text: "<blockquote>анон:</blockquote>\n\n" + text,
+      disable_notification: true
+    })
+  };
+  UrlFetchApp.fetch(url, payload);
+}
+
+function check() {
+  sendPhotoByFileId(TARGET_CHAT_ID, "AgACAgIAAxkBAAMVZhxZPQPKi4ukfDacf0qmVva1X_YAAnPXMRtsH-FIUZkzTBzw1vsBAAMCAAN5AAM0BA")
+}
+
+
+// Function to send photos to the target chat
+function sendPhotoByFileId(chat_id, file_id, capt) {
+  const url = `${API_URL}/sendPhoto`;
+  const payload = {
+    method: 'post',
+    contentType: 'application/json',
+    muteHttpExceptions: true, // Optional, for debugging purposes
+    payload: JSON.stringify({
+      chat_id: chat_id,
+      message_thread_id: THREAD_ID,
+      parse_mode: 'HTML',
+      photo: file_id,
+      caption: "<blockquote>анон:</blockquote>\n\n" + capt
+    })
+  };
+
+  // Sending the request to Telegram API to send the photo
+  const response = UrlFetchApp.fetch(url, payload);
+  
+  // Log the response for debugging purposes
+  Logger.log(response.getContentText());
+}
